@@ -31,7 +31,7 @@ for year in lstYears:
         try:
             ele=elements[i]
             href=ele.get_attribute('href')
-            # href.startswith('https://dl.acm.org/doi/')
+
             if href!= None and href!='' and href.startswith('https://doi.org/'):
                 print(href)
                 lstUrls.append(href)
