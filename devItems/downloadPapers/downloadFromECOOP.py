@@ -16,13 +16,13 @@ def createDirIfNotExist(fopOutput):
 fpChromeDriver='/Users/hungphan/git/COMS-319-TA/Fall-2021/HW4-UITest/chromedriver'
 fopUrl='logConferences/'
 lstYears=[2021,2020,2019]
-strConferenceName='fse'
+strConferenceName='ecoop'
 createDirIfNotExist(fopUrl)
 driver = webdriver.Chrome(executable_path=fpChromeDriver)
 for year in lstYears:
-    strHtmlName='{}{}.html'.format(strConferenceName,year)
-    strUrlName='url_{}_{}.txt'.format(strConferenceName,year)
-    driver.get("https://dblp.org/db/conf/sigsoft/"+strHtmlName)
+    strHtmlName = '{}/{}{}.html'.format(strConferenceName, strConferenceName, year)
+    strUrlName = 'url_{}_{}.txt'.format(strConferenceName, year)
+    driver.get("https://dblp.org/db/conf/" + strHtmlName)
 
     elements=driver.find_elements(By.XPATH,"//li[contains(@class, 'entry') and contains(@class, 'proceedings')]")
     lstStrs=[]
