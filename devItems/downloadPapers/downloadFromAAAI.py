@@ -24,23 +24,45 @@ for year in lstYears:
     strUrlName = 'url_{}_{}.txt'.format(strConferenceName, year)
     driver.get("https://dblp.org/db/conf/" + strHtmlName)
 
-    elements=driver.find_elements(By.XPATH,"//li[contains(@class, 'entry') and contains(@class, 'proceedings')]")
-    lstStrs=[]
-    for i in range(0,len(elements)):
-        try:
-            ele=elements[i]
-            # print(ele.text)
-            eleTitle=ele.find_element(By.XPATH,".//cite/span[@class='title' and @itemprop='name']" )
-            strTitle=eleTitle.text.replace('\r\n',' ').replace('\n',' ').replace('\t',' ').strip()
-            eleAuthor = ele.find_element(By.XPATH, ".//cite/span[@itemprop='author']")
-            strAuthor = eleAuthor.text.replace('\r\n', ' ').replace('\n', ' ').replace('\t', ' ').strip()
-            eleLink = ele.find_element(By.XPATH, ".//nav[@class='publ']/ul/li/div[@class='head']/a")
-            strLink = eleLink.get_attribute('href').replace('\r\n', ' ').replace('\n', ' ').replace('\t', ' ').strip()
-            strLine='{}\t{}\t{}\t{}'.format(i,strTitle,strAuthor,strLink)
-            lstStrs.append(strLine)
-            # print('{}\t{}'.format(i,strTitle))
-        except:
-            traceback.print_exc()
+
+    ulElements = driver.find_elements(By.XPATH, "//ul[@class='publ-list']")
+    lstStrs = []
+    # print('len {}\n{}'.format(len(ulElements),ulElements[2].text))
+    try:
+        for j in range(1, len(ulElements)):
+            # print(ulItem.text)
+            ulItem = ulElements[j]
+            prevUlItem = ulElements[j - 1]
+            strSession = 'UnknownSession'
+            try:
+                eleSessionName = prevUlItem.find_element(By.XPATH, "./following-sibling::header/h3")
+                # eleSessionName=arrEleSessionName[len(arrEleSessionName)-1]
+                strSession = eleSessionName.text.replace('\r\n', ' ').replace('\n', ' ').replace('\t', ' ').strip()
+                print(strSession)
+            except:
+                traceback.print_exc()
+
+            elements = ulItem.find_elements(By.XPATH,
+                                            ".//li[contains(@class, 'entry') and contains(@class, 'proceedings')]")
+            for i in range(0, len(elements)):
+                try:
+                    ele = elements[i]
+                    # print(ele.text)
+                    eleTitle = ele.find_element(By.XPATH, ".//cite/span[@class='title' and @itemprop='name']")
+                    strTitle = eleTitle.text.replace('\r\n', ' ').replace('\n', ' ').replace('\t', ' ').strip()
+                    eleAuthor = ele.find_element(By.XPATH, ".//cite/span[@itemprop='author']")
+                    strAuthor = eleAuthor.text.replace('\r\n', ' ').replace('\n', ' ').replace('\t', ' ').strip()
+                    eleLink = ele.find_element(By.XPATH, ".//nav[@class='publ']/ul/li/div[@class='head']/a")
+                    strLink = eleLink.get_attribute('href').replace('\r\n', ' ').replace('\n', ' ').replace('\t',
+                                                                                                            ' ').strip()
+                    strLine = '{}\t{}\t{}\t{}\t{}'.format(i + 1, strSession, strTitle, strAuthor, strLink)
+                    lstStrs.append(strLine)
+                    # print('{}\t{}'.format(i,strTitle))
+                except:
+                    traceback.print_exc()
+    except:
+        traceback.print_exc()
+
     f1=open(fopUrl+strUrlName,'w')
     f1.write('\n'.join(lstStrs))
     f1.close()

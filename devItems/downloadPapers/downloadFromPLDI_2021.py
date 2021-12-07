@@ -15,30 +15,31 @@ def createDirIfNotExist(fopOutput):
 
 fpChromeDriver='/Users/hungphan/git/COMS-319-TA/Fall-2021/HW4-UITest/chromedriver'
 fopUrl='logConferences/'
-lstYears=[2021,2020,2019]
-strConferenceName='fse'
+lstYears=[2021]
+strConferenceName='pldi'
 createDirIfNotExist(fopUrl)
 driver = webdriver.Chrome(executable_path=fpChromeDriver)
 for year in lstYears:
-    strHtmlName='{}{}.html'.format(strConferenceName,year)
-    strUrlName='url_{}_{}.txt'.format(strConferenceName,year)
-    driver.get("https://dblp.org/db/conf/sigsoft/"+strHtmlName)
-    ulElements=driver.find_elements(By.XPATH,"//ul[@class='publ-list']")
+    strHtmlName = '{}/{}{}.html'.format(strConferenceName, strConferenceName, year)
+    strUrlName = 'url_{}_{}.txt'.format(strConferenceName, year)
+    driver.get("https://dblp.org/db/conf/" + strHtmlName)
+
+    ulElements = driver.find_elements(By.XPATH, "//ul[@class='publ-list']")
     lstStrs = []
     # print('len {}\n{}'.format(len(ulElements),ulElements[2].text))
     try:
-        for j in range(1,len(ulElements)):
+        for j in range(0, len(ulElements)):
             # print(ulItem.text)
             ulItem = ulElements[j]
-            prevUlItem=ulElements[j-1]
-            strSession='UnknownSession'
-            try:
-                eleSessionName=prevUlItem.find_element(By.XPATH, "./following-sibling::header/h2")
-                # eleSessionName=arrEleSessionName[len(arrEleSessionName)-1]
-                strSession=eleSessionName.text.replace('\r\n', ' ').replace('\n', ' ').replace('\t', ' ').strip()
-                print(strSession)
-            except:
-                traceback.print_exc()
+            # prevUlItem = ulElements[j - 1]
+            strSession = 'UnknownSession'
+            # try:
+            #     eleSessionName = prevUlItem.find_element(By.XPATH, "./following-sibling::header/h2")
+            #     # eleSessionName=arrEleSessionName[len(arrEleSessionName)-1]
+            #     strSession = eleSessionName.text.replace('\r\n', ' ').replace('\n', ' ').replace('\t', ' ').strip()
+            #     print(strSession)
+            # except:
+            #     traceback.print_exc()
 
             elements = ulItem.find_elements(By.XPATH,
                                             ".//li[contains(@class, 'entry') and contains(@class, 'proceedings')]")
@@ -53,7 +54,7 @@ for year in lstYears:
                     eleLink = ele.find_element(By.XPATH, ".//nav[@class='publ']/ul/li/div[@class='head']/a")
                     strLink = eleLink.get_attribute('href').replace('\r\n', ' ').replace('\n', ' ').replace('\t',
                                                                                                             ' ').strip()
-                    strLine = '{}\t{}\t{}\t{}\t{}'.format(i+1,strSession, strTitle, strAuthor, strLink)
+                    strLine = '{}\t{}\t{}\t{}\t{}'.format(i + 1, strSession, strTitle, strAuthor, strLink)
                     lstStrs.append(strLine)
                     # print('{}\t{}'.format(i,strTitle))
                 except:
