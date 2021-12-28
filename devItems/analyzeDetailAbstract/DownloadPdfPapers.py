@@ -9,6 +9,7 @@ import pandas as pd
 from datetime import datetime
 from PdfMinerHandler import *
 import urllib.request
+import shutil
 
 def getDomain(strLink):
     strResult=''
@@ -24,20 +25,36 @@ def getPdfContent(driver,strDomain, urlLink,fopTempData,indexView,fpPdfLocation)
         time.sleep(timeWaitInSecond)
         if strDomain=='ieeexplore.ieee.org':
             strResult = 'ERROR: NOT SUPPORTED'
-            # strRedirectLink=urlLink.replace('/document/','/stamp/stamp.jsp?arnumber=')
-            # response = urllib.request.urlopen(strRedirectLink)
-            # file = open(fpPdfLocation, 'wb')
-            # file.write(response.read())
-            # file.close()
-            # strResult='Success downloaded the file!'
+            strRedirectLink=urlLink.replace('/document/','/stamp/stamp.jsp?arnumber=')
+            response = urllib.request.urlopen(strRedirectLink)
+            file = open(fpPdfLocation, 'wb')
+            file.write(response.read())
+            file.close()
+            # driver.get(strRedirectLink)
+            # time.sleep(timeWaitInSecond*2)
+            # list_of_files = glob.glob(fopTemp + '*.pdf')  # * means all if need specific format then *.csv
+            # latest_file_pdf = max(list_of_files, key=os.path.getctime)
+            # shutil.copyfile(latest_file_pdf, fpPdfLocation)
+            # os.remove(latest_file_pdf)
+            strResult='Success downloaded the file!'
         elif  strDomain=='dl.acm.org':
             strResult = 'ERROR: NOT SUPPORTED'
-            # strRedirectLink = urlLink.replace('/doi/', '/doi/pdf/')
+            strRedirectLink = urlLink.replace('/doi/', '/doi/pdf/')
             # response = urllib.request.urlopen(strRedirectLink)
             # file = open(fpPdfLocation, 'wb')
             # file.write(response.read())
             # file.close()
-            # strResult = 'Success downloaded the file!'
+            driver.get(strRedirectLink)
+            maxCount=20
+            indexCount=0
+            while (not os.listdir(fopTemp)) and indexCount<=maxCount:
+                time.sleep(timeWaitInSecond)
+                indexCount=indexCount+1
+            list_of_files = glob.glob(fopTemp+'*.pdf')  # * means all if need specific format then *.csv
+            latest_file_pdf = max(list_of_files, key=os.path.getctime)
+            shutil.copyfile(latest_file_pdf, fpPdfLocation)
+            os.remove(latest_file_pdf)
+            strResult = 'Success downloaded the file!'
         elif strDomain == 'aclanthology.org':
             strResult = 'ERROR: NOT SUPPORTED'
             strRedirectLink = urlLink[0:(len(urlLink)-1)]+'.pdf'
@@ -84,6 +101,14 @@ def getPdfContent(driver,strDomain, urlLink,fopTempData,indexView,fpPdfLocation)
             file.write(response.read())
             file.close()
             strResult = 'Success downloaded the file!'
+        elif strDomain=='file://':
+            strResult = 'ERROR: NOT SUPPORTED'
+            strRedirectLink = urlLink.replace('/Users/hungphan/git/papers/paper_proceedings/ASE2021_FULL/', '/home/hungphd/media/dataPapersExternal/collectPaperLinks/ASE2021_FULL/')
+            response = urllib.request.urlopen(strRedirectLink)
+            file = open(fpPdfLocation, 'wb')
+            file.write(response.read())
+            file.close()
+            strResult = 'Success downloaded the file!'
         elif strDomain == 'www.statmt.org' or urlLink.endswith('.pdf'):
             strResult='ERROR: NOT SUPPORTED'
             strRedirectLink=urlLink
@@ -118,10 +143,12 @@ def createDirIfNotExist(fopOutput):
         print("Directory ", fopOutput, " already exists")
 
 
-fpChromeDriver='/Users/hungphan/git/COMS-319-TA/Fall-2021/HW4-UITest/chromedriver'
-fopRoot='/Users/hungphan/git/dataPapers/collectPaperLinks/'
-fopSearchDomain=fopRoot+'searchOutputOfDomains/abstracts-full/'
-fopPaperLocation=fopRoot+'papers/'
+# fpChromeDriver='/Users/hungphan/git/COMS-319-TA/Fall-2021/HW4-UITest/chromedriver'
+# fopRoot='/Users/hungphan/git/dataPapers/collectPaperLinks/'
+fpChromeDriver='/home/hungphd/softwares/chromedriver/chromedriver'
+fopRoot='/home/hungphd/media/dataPapersExternal/collectPaperLinks/'
+fopSearchDomain=fopRoot+'collectResults/'
+fopPaperLocation=fopSearchDomain+'papers/'
 fpLogAbstract=fopSearchDomain+'logAbstract.txt'
 fpLogDownload=fopPaperLocation+'logDownload.txt'
 fopTemp=fopSearchDomain+'temp/'
@@ -131,10 +158,17 @@ createDirIfNotExist(fopPaperLocation)
 timeWaitInSecond=0.5
 
 options = webdriver.ChromeOptions()
-options.add_argument('--allow-insecure-localhost') # differ on driver version. can ignore.
-caps = options.to_capabilities()
-caps["acceptInsecureCerts"] = True
-driver = webdriver.Chrome(executable_path=fpChromeDriver,desired_capabilities=caps)
+options.add_experimental_option('prefs', {
+"download.default_directory": fopTemp, #Change default directory for downloads
+"download.prompt_for_download": False, #To auto download the file
+"download.directory_upgrade": True,
+"plugins.always_open_pdf_externally": True #It will not show PDF directly in chrome
+})
+# options.add_argument('--allow-insecure-localhost') # differ on driver version. can ignore.
+# caps = options.to_capabilities()
+# caps["acceptInsecureCerts"] = True
+# desired_capabilities=caps
+driver = webdriver.Chrome(executable_path=fpChromeDriver,options=options)
 
 
 f1=open(fpLogAbstract,'r')
