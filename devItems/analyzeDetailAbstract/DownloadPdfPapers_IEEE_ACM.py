@@ -11,7 +11,7 @@ from PdfMinerHandler import *
 import urllib.request
 import shutil
 import pdfkit
-
+import subprocess as sp
 def getDomain(strLink):
     strResult=''
     arrUrl=strLink.split('/')
@@ -19,49 +19,81 @@ def getDomain(strLink):
         strResult='/'.join(arrUrl[0:3]).replace('http://','').replace('https://','').strip()
     return strResult
 
+def download_by_wget(pdf_url,fpPdfLocation):
+    # paper_title = get_paper_title(paper_id)
+    # save_title = paper_title.replace(' ', '_')
+    # Get pdf url by paper id. Refer to
+    #   http://stackoverflow.com/questions/22800284/download-papers-from-ieee-xplore-with-wget
+    # pdf_url = 'http://ieeexplore.ieee.org/stampPDF/getPDF.jsp?tp=&isnumber=&arnumber={}'.format(paper_id)
+    # print(pdf_url)
+    fopPdf=os.path.dirname(fpPdfLocation)+'/'
+    namePdf=os.path.basename(fpPdfLocation)
+    sp.call('wget "{}" -O {}'.format(pdf_url,fpPdfLocation), shell=True, stderr=sp.DEVNULL, stdout=sp.DEVNULL)
+
+
 def getPdfContent(driver,strDomain, urlLink,fopTempData,indexView,fpPdfLocation):
     strResult = 'ERROR: NOT SUPPORTED'
     strRedirectLink=urlLink
     try:
-        time.sleep(timeWaitInSecond)
+
         if strDomain=='ieeexplore.ieee.org':
             strResult = 'ERROR: NOT SUPPORTED'
-            strRedirectLink=urlLink.replace('/document/','/stamp/stamp.jsp?tp=&arnumber=')
-            # response = urllib.request.urlopen(strRedirectLink)
-            # file = open(fpPdfLocation.replace('.pdf','.html'), 'wb')
-            # file.write(response.read())
-            # file.close()
+            strRedirectLink=urlLink.replace('/document/','/stampPDF/getPDF.jsp?tp=&isnumber=&arnumber=')
+            # isPDFValid = False
+            # countReset=0
+            # while(not isPDFValid):
+            #     import PyPDF2
+            #     f1=None
+            #     try:
+            #         sp.call('wget "{}" -O {}'.format(strRedirectLink, fpPdfLocation), shell=True, stderr=sp.DEVNULL,
+            #                 stdout=sp.DEVNULL)
+            #         time.sleep(timeWaitInSecond)
+            #         f1=open(fpPdfLocation, "rb")
+            #         pdf = PyPDF2.PdfFileReader(f1)
+            #         if not f1 is None:
+            #             f1.close()
+            #         # isPDFValid=True
+            #     except:
+            #         print("invalid PDF file {}\n{}\t{}".format(fpPdfLocation,isPDFValid,strRedirectLink))
+            #         if not f1 is None:
+            #             f1.close()
+            #     else:
+            #         isPDFValid=True
+            #         # print("Valid PDF!")
+            #         # print(pdf.getDocumentInfo())
+            #     if not isPDFValid:
+            #         try:
+            #             print('refresh')
+            #             sp.call('sudo bash {}'.format(fpBashInternet), shell=True)
+            #             countReset=countReset+1
+            #             if countReset%5==0:
+            #                 time.sleep(300)
+            #             else:
+            #                 time.sleep(timeWaitInSecond)
+            #         except:
+            #             pass
+            # strResult='Success downloaded the file!'
 
+
+            driver.get(urlLink)
+            btnPdf=driver.find_element(By.XPATH,'//a[contains(@class,"pdf-btn-link") and contains(@class,"stats-document-lh-action-downloadPdf_2 pdf")]')
+            btnPdf.click()
+            time.sleep(timeWaitInSecond)
+            strResult = 'Success downloaded the file!'
+
+        elif  strDomain=='dl.acm.org':
+            strResult = 'ERROR: NOT SUPPORTED'
+            strRedirectLink = urlLink.replace('/doi/', '/doi/pdf/')
+            # sp.call('wget "{}" -O {}'.format(strRedirectLink, fpPdfLocation), shell=True, stderr=sp.DEVNULL, stdout=sp.DEVNULL)
+            # strResult = 'Success downloaded the file!'
             createDirIfNotExist(fopTemp)
             driver.get(strRedirectLink)
             maxCount = 20
             indexCount = 0
-            while (len(glob.glob(fopTemp + '*.pdf'))==0 and indexCount<=maxCount):
+            while (len(glob.glob(fopTemp + '*.pdf')) == 0 and indexCount <= maxCount):
                 time.sleep(timeWaitInSecond)
                 indexCount = indexCount + 1
-            # time.sleep(timeWaitInSecond*6)
             list_of_files = glob.glob(fopTemp + '*.pdf')  # * means all if need specific format then *.csv
-            latest_file_pdf = max(list_of_files, key=os.path.getctime)
-            # time.sleep(timeWaitInSecond)
-            shutil.copyfile(latest_file_pdf, fpPdfLocation)
-            shutil.rmtree(fopTemp)
-            createDirIfNotExist(fopTemp)
-            strResult='Success downloaded the file!'
-        elif  strDomain=='dl.acm.org':
-            strResult = 'ERROR: NOT SUPPORTED'
-            strRedirectLink = urlLink.replace('/doi/', '/doi/pdf/')
-            # response = urllib.request.urlopen(strRedirectLink)
-            # file = open(fpPdfLocation, 'wb')
-            # file.write(response.read())
-            # file.close()
-            createDirIfNotExist(fopTemp)
-            driver.get(strRedirectLink)
-            maxCount=20
-            indexCount=0
-            while (len(glob.glob(fopTemp + '*.pdf')) == 0 and indexCount<=maxCount):
-                time.sleep(timeWaitInSecond)
-                indexCount = indexCount + 1
-            list_of_files = glob.glob(fopTemp+'*.pdf')  # * means all if need specific format then *.csv
             latest_file_pdf = max(list_of_files, key=os.path.getctime)
 
             shutil.copyfile(latest_file_pdf, fpPdfLocation)
@@ -166,18 +198,18 @@ fopSearchDomain=fopRoot+'collectResults/'
 fopPaperLocation=fopSearchDomain+'papers/'
 fpLogAbstract=fopSearchDomain+'logAbstract.txt'
 fpLogDownload=fopPaperLocation+'logDownload.txt'
+fpBashInternet=fopSearchDomain+'runResetInternet.sh'
 fopTemp=fopSearchDomain+'temp/'
 createDirIfNotExist(fopSearchDomain)
 createDirIfNotExist(fopTemp)
 createDirIfNotExist(fopPaperLocation)
-timeWaitInSecond=0.5
+timeWaitInSecond=3
 
 options = webdriver.ChromeOptions()
 options.add_experimental_option('prefs', {
 "download.default_directory": fopTemp, #Change default directory for downloads
 "download.prompt_for_download": False, #To auto download the file
 "download.directory_upgrade": True,
- "download.extensions_to_open": "applications/pdf",
 "plugins.always_open_pdf_externally": True #It will not show PDF directly in chrome
 })
 # options.add_argument('--allow-insecure-localhost') # differ on driver version. can ignore.
@@ -234,11 +266,13 @@ for key in dictListOfDomains.keys():
 maxSize=max(lstSizeOfDomain)
 indexView=0
 
+lstSpecificDomains=['ieeexplore.ieee.org']
+
 for i in range(0,maxSize):
     try:
-        for j in range(0, len(dictListOfDomains.keys())):
+        for j in range(0, len(lstSpecificDomains)):
             try:
-                keyDomain=list(dictListOfDomains.keys())[j]
+                keyDomain=lstSpecificDomains[j]
                 valListIds=dictListOfDomains[keyDomain]
                 if i<len(valListIds):
                     keyId=valListIds[i]
@@ -260,10 +294,10 @@ for i in range(0,maxSize):
                     f1 = open(fpLogDownload, 'a')
                     f1.write(strContent + '\n')
                     f1.close()
-
-                    if (indexView % 10 == 0):
-                        print('sleep in 2 seconds')
-                        time.sleep(2)
+                    input('aaa ')
+                    # if (indexView % 30 == 0):
+                    #     print('sleep in 30 seconds')
+                    #     time.sleep(30)
 
             except:
                 traceback.print_exc()
